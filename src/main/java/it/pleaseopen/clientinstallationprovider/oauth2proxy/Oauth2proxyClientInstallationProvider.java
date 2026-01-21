@@ -1,6 +1,8 @@
 package it.pleaseopen.clientinstallationprovider.oauth2proxy;
 
 import java.net.URI;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Map;
 
 import jakarta.ws.rs.core.MediaType;
@@ -28,7 +30,8 @@ public class Oauth2proxyClientInstallationProvider implements ClientInstallation
         
         // Provider configuration
         envVars.append("OAUTH2_PROXY_PROVIDER=\"keycloak-oidc\"\n");
-        envVars.append("OAUTH2_PROXY_PROVIDER_DISPLAY_NAME=\"Keycloak\"\n");
+        String displayName = realm.getName() != null && !realm.getName().isEmpty() ? realm.getName() : realm.getId();
+        envVars.append("OAUTH2_PROXY_PROVIDER_DISPLAY_NAME=\"").append(displayName).append("\"\n");
         
         // Client ID
         envVars.append("OAUTH2_PROXY_CLIENT_ID=\"").append(client.getClientId()).append("\"\n");
@@ -41,13 +44,26 @@ public class Oauth2proxyClientInstallationProvider implements ClientInstallation
             }
         }
         
-        // Optional cookie settings (commented out as examples)
+        // Optional cookie settings
+        envVars.append("# Set HttpOnly flag on cookies (recommended for security)\n");
         envVars.append("#OAUTH2_PROXY_COOKIE_HTTPONLY=\"true\"\n");
+        envVars.append("# Cookie name for the OAuth2 Proxy session\n");
         envVars.append("#OAUTH2_PROXY_COOKIE_NAME=\"_oauth2_proxy\"\n");
+        envVars.append("# SameSite cookie attribute: lax, strict, or none\n");
         envVars.append("#OAUTH2_PROXY_COOKIE_SAMESITE=\"lax\"\n");
-        envVars.append("#OAUTH2_PROXY_COOKIE_SECRET=\"GENERATE_YOUR_OWN_SECRET_HERE\"\n");
+        
+        // Generate a secure random cookie secret
+        envVars.append("# Cookie secret auto-generated (32 bytes base64). To generate your own: openssl rand -base64 32\n");
+        byte[] secretBytes = new byte[32];
+        new SecureRandom().nextBytes(secretBytes);
+        String cookieSecret = Base64.getEncoder().encodeToString(secretBytes);
+        envVars.append("OAUTH2_PROXY_COOKIE_SECRET=\"").append(cookieSecret).append("\"\n");
+        
+        envVars.append("# Set Secure flag on cookies (true for HTTPS, false for HTTP)\n");
         envVars.append("#OAUTH2_PROXY_COOKIE_SECURE=\"false\"\n");
+        envVars.append("# Restrict authentication to specific email domains (* allows all)\n");
         envVars.append("#OAUTH2_PROXY_EMAIL_DOMAINS=\"*\"\n");
+        envVars.append("# HTTP listening address and port\n");
         envVars.append("#OAUTH2_PROXY_HTTP_ADDRESS=\"0.0.0.0:8080\"\n");
         
         // OIDC Issuer URL
@@ -58,8 +74,10 @@ public class Oauth2proxyClientInstallationProvider implements ClientInstallation
         issuerUrl += "realms/" + realm.getName();
         envVars.append("OAUTH2_PROXY_OIDC_ISSUER_URL=\"").append(issuerUrl).append("\"\n");
         
-        // Optional pass tokens settings (commented out)
+        // Optional pass tokens settings
+        envVars.append("# Pass access token to upstream via X-Forwarded-Access-Token header\n");
         envVars.append("#OAUTH2_PROXY_PASS_ACCESS_TOKEN=\"true\"\n");
+        envVars.append("# Pass OIDC IDToken to upstream via Authorization Bearer header\n");
         envVars.append("#OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER=\"true\"\n");
         envVars.append("\n");
         
@@ -74,19 +92,27 @@ public class Oauth2proxyClientInstallationProvider implements ClientInstallation
             envVars.append("OAUTH2_PROXY_REDIRECT_URL=\"").append(redirectUrl).append("\"\n");
         }
         
-        // Optional reverse proxy settings (commented out)
+        // Optional reverse proxy settings
+        envVars.append("# Enable if running behind a reverse proxy (trusts X-Forwarded headers)\n");
         envVars.append("#OAUTH2_PROXY_REVERSE_PROXY=\"true\"\n");
         
         // Scopes
-        envVars.append("OAUTH2_PROXY_SCOPE=\"openid email profile\"\n");
+        envVars.append("# OIDC scopes to request (openid is required for OIDC)\n");
+        envVars.append("#OAUTH2_PROXY_SCOPE=\"openid email profile\"\n");
         
-        // Optional authorization headers (commented out)
+        // Optional authorization headers
+        envVars.append("# Set Authorization Bearer header with access token for upstream\n");
         envVars.append("#OAUTH2_PROXY_SET_AUTHORIZATION_HEADER=\"true\"\n");
+        envVars.append("# Set X-Auth-Request-* headers with user info for upstream\n");
         envVars.append("#OAUTH2_PROXY_SET_XAUTHREQUEST=\"true\"\n");
+        envVars.append("# Skip the provider selection button (go directly to login)\n");
         envVars.append("#OAUTH2_PROXY_SKIP_PROVIDER_BUTTON=\"false\"\n");
         
-        // Upstream configuration (commented out as example)
+        // Upstream configuration
+        envVars.append("# Backend service URL(s) to proxy to (required)\n");
         envVars.append("#OAUTH2_PROXY_UPSTREAMS=\"http://127.0.0.1:9000\"\n");
+        envVars.append("\n");
+        envVars.append("# Full documentation: https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/overview\n");
 
         return Response.ok(envVars.toString(), MediaType.TEXT_PLAIN_TYPE).build();
     }

@@ -1,6 +1,8 @@
 package it.pleaseopen.clientinstallationprovider.oauth2proxy;
 
 import java.net.URI;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Map;
 
 import jakarta.ws.rs.core.MediaType;
@@ -41,7 +43,8 @@ public class Oauth2proxyConfigClientInstallationProvider implements ClientInstal
         config.append("provider = \"keycloak-oidc\"\n\n");
         
         config.append("# Display name shown on the login button\n");
-        config.append("provider_display_name = \"Keycloak\"\n\n");
+        String displayName = realm.getName() != null && !realm.getName().isEmpty() ? realm.getName() : realm.getId();
+        config.append("provider_display_name = \"").append(displayName).append("\"\n\n");
         
         config.append("###########################################################\n");
         config.append("## CLIENT CREDENTIALS\n");
@@ -112,13 +115,13 @@ public class Oauth2proxyConfigClientInstallationProvider implements ClientInstal
         config.append("# Cookie name used to store the session\n");
         config.append("cookie_name = \"_oauth2_proxy\"\n\n");
         
-        config.append("# Cookie secret - Used to encrypt the cookie\n");
-        config.append("# REQUIRED: Generate a secure random secret with:\n");
-        config.append("#   python -c 'import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'\n");
-        config.append("#   OR\n");
-        config.append("#   openssl rand -base64 32 | tr -- '+/' '-_'\n");
+        config.append("# Cookie secret - Used to encrypt the cookie (auto-generated)\n");
+        config.append("# To generate your own: openssl rand -base64 32 | tr -- '+/' '-_'\n");
         config.append("# IMPORTANT: This must be exactly 32 bytes when base64 decoded\n");
-        config.append("# cookie_secret = \"REPLACE_WITH_GENERATED_SECRET\"\n\n");
+        byte[] secretBytes = new byte[32];
+        new SecureRandom().nextBytes(secretBytes);
+        String cookieSecret = Base64.getUrlEncoder().withoutPadding().encodeToString(secretBytes);
+        config.append("cookie_secret = \"").append(cookieSecret).append("\"\n\n");
         
         config.append("# Cookie security settings\n");
         config.append("# Set to 'true' in production with HTTPS\n");
