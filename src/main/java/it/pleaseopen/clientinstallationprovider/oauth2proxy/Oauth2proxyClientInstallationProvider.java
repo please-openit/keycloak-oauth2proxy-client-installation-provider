@@ -53,16 +53,16 @@ public class Oauth2proxyClientInstallationProvider implements ClientInstallation
         envVars.append("#OAUTH2_PROXY_COOKIE_SAMESITE=\"lax\"\n");
         
         // Generate a secure random cookie secret
-        envVars.append("# Cookie secret auto-generated (32 bytes base64). To generate your own: openssl rand -base64 32\n");
+        envVars.append("# Cookie secret auto-generated (32 bytes base64url). To generate your own: openssl rand -base64 32 | tr -- '+/' '-_'\n");
         byte[] secretBytes = new byte[32];
         new SecureRandom().nextBytes(secretBytes);
-        String cookieSecret = Base64.getEncoder().encodeToString(secretBytes);
+        String cookieSecret = Base64.getUrlEncoder().withoutPadding().encodeToString(secretBytes);
         envVars.append("OAUTH2_PROXY_COOKIE_SECRET=\"").append(cookieSecret).append("\"\n");
         
         envVars.append("# Set Secure flag on cookies (true for HTTPS, false for HTTP)\n");
         envVars.append("#OAUTH2_PROXY_COOKIE_SECURE=\"false\"\n");
         envVars.append("# Restrict authentication to specific email domains (* allows all)\n");
-        envVars.append("#OAUTH2_PROXY_EMAIL_DOMAINS=\"*\"\n");
+        envVars.append("OAUTH2_PROXY_EMAIL_DOMAINS=\"*\"\n");
         envVars.append("# HTTP listening address and port\n");
         envVars.append("#OAUTH2_PROXY_HTTP_ADDRESS=\"0.0.0.0:8080\"\n");
         
